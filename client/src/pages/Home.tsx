@@ -1,4 +1,5 @@
 import React from "react";
+import { Socket } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 
 type props = {
@@ -6,16 +7,23 @@ type props = {
   room: string;
   setName: (s: string) => void;
   setRoom: (r: string) => void;
-  joinroom: () => void;
+  socket: Socket;
 };
 
-const Home: React.FC<props> = ({ username, room, setName, setRoom ,joinroom}) => {
+const Home: React.FC<props> = ({
+  username,
+  room,
+  setName,
+  setRoom,
+  socket,
+}) => {
   const navigate = useNavigate();
 
   const joinRoom = () => {
-    // socket.emit("joinRoom", { username, room });
-    console.log(username, room);
-    navigate("/chat");
+    if (username !== "" && room !== "") {
+      socket.emit("joinRoom", { username, room });
+      navigate("/chat");
+    }
   };
 
   return (

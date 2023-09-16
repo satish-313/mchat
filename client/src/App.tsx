@@ -3,18 +3,16 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useNavigate,
 } from "react-router-dom";
 import { io } from "socket.io-client";
 import Chat from "./pages/Chat";
 import Home from "./pages/Home";
 
-// const socket = io("http://localhost:4000");
+const socket = io("http://localhost:4040");
 
 function App() {
   const [username, setUsername] = useState("");
   const [room, setRoom] = useState("");
-  // const navigate = useNavigate();
 
   const setName = (s: string) => {
     setUsername(s);
@@ -22,12 +20,6 @@ function App() {
 
   const setroom = (r: string) => {
     setRoom(r);
-  };
-
-  const joinRoom = () => {
-    // socket.emit("joinRoom", { username, room });
-    console.log(username, room);
-    // navigate("/chat");
   };
 
   return (
@@ -39,13 +31,17 @@ function App() {
             <Home
               username={username}
               setName={setName}
-              joinroom={joinRoom}
               setRoom={setroom}
               room={room}
+              socket={socket}
             />
           }
         />
-        <Route path="/chat" element={<Chat />} />
+        <Route path="/chat" element={<Chat
+          username={username}
+          room = {room}
+          socket = {socket}
+        />} />
       </Routes>
     </Router>
   );
