@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
-import { allUserT, roomData } from "../typing";
 import { leaveRoom } from "./utils";
 
 dotenv.config();
