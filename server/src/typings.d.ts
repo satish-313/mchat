@@ -8,3 +8,10 @@ type allUserT = {
     id: string;
     room: string;
 };
+
+type messageT = {
+    message: string;
+    username: string;
+    room: string;
+    createdtime: string;
+};

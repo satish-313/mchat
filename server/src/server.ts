@@ -4,11 +4,12 @@ import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
 import { leaveRoom } from "./utils";
+import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
-
 const chatroom = [];
 let allUser: allUserT[] = [];
+const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 4040;
@@ -23,7 +24,7 @@ const io = new Server(server, {
     },
 });
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
     res.json("hello");
 });
 
@@ -31,43 +32,92 @@ io.on("connection", (socket) => {
     // console.log(`User connected connection ${socket.id}`);
 
     // Add a user to a room
-    socket.on("joinRoom", (data: roomData) => {
+    socket.on("joinRoom", async (data: roomData) => {
         const { username, room } = data;
         socket.join(room);
         // console.log(data, "join room")
-        let _createdtime_ = Date.now();
+        let createdtime = Date.now();
         socket.to(room).emit("receive_message", {
             message: `${username} has join room`,
             username: "ChatBot",
-            _createdtime_,
+            createdtime,
         });
 
         socket.emit("receive_message", {
-            message: `Welcom ${username}`,
+            message: `Welcome ${username}`,
             username: "ChatBot",
-            _createdtime_,
+            createdtime,
         });
+        let last_20_message: messageT[] = [];
+        try {
+            last_20_message = await prisma.messagetable.findMany({
+                where: {
+                    room,
+                },
+                orderBy: {
+                    id: "desc",
+                },
+                take: 20,
+            });
+        } catch (error) {
+            console.log(error);
+        }
+        socket.on("disconnect", () => {
+            const user = allUser.find((user) => user.id == socket.id);
+            let createdtime = Date.now();
 
+            if (user?.username) {
+                allUser = leaveRoom(socket.id, allUser);
+                socket.to(room).emit("chatroom_users", allUser);
+                socket.to(room).emit("receive_message", {
+                    message: `${user.username} has disconnected from the chat.`,
+                    username: "ChatBot",
+                    createdtime: createdtime,
+                });
+            }
+        });
         allUser.push({ id: socket.id, username, room });
         const chatRoomUser = allUser.filter((u) => u.room === room);
         socket.to(room).emit("chatroom_users", chatRoomUser);
         socket.emit("chatroom_users", chatRoomUser);
+        socket.emit("last_20_message", last_20_message);
     });
 
     // leave user
     socket.on("leave_room", (data: allUserT) => {
         const { username, room } = data;
         socket.leave(room);
-        const __createdtime__ = Date.now();
+        const createdtime = Date.now();
 
         allUser = leaveRoom(socket.id, allUser);
         socket.to(room).emit("chatroom_users", allUser);
         socket.to(room).emit("receive_message", {
             username: "CHAT_BOT",
             message: `${username} has left the chat`,
-            __createdtime__,
+            createdtime,
         });
     });
+
+    // send message
+    socket.on("send_message", async (data: messageT) => {
+        const { createdtime, message, room, username } = data;
+        io.in(room).emit("receive_message", data);
+        try {
+            await prisma.messagetable.create({
+                data: {
+                    message,
+                    room,
+                    username,
+                    createdtime: `${createdtime}`,
+                },
+            });
+            // console.log(data)
+        } catch (error) {
+            console.log(error);
+        }
+    });
+
+    // disconnect
 });
 
 server.listen(PORT, () => `server is running on ${PORT}`);

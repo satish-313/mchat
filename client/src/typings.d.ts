@@ -1,5 +1,5 @@
 type messageT = {
     message: string;
-    __createdtime__: string;
+    createdtime: string;
     username: string;
 };

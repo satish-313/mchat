@@ -31,8 +31,8 @@ const ChatroomUser: React.FC<Props> = ({ props }) => {
     }, [socket]);
 
     const leaveRoom = () => {
-        const __createdtime__ = Date.now();
-        socket.emit("leave_room", { username, room, __createdtime__ });
+        const createdtime = Date.now();
+        socket.emit("leave_room", { username, room, createdtime});
         navigate("/", { replace: true });
     };
 
